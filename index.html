@@ -1,1 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lockdown Focus</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .container { text-align: center; max-width: 400px; width: 90%; padding: 2rem; background: #1e293b; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: all 0.5s ease; }
+        h1 { font-size: 1.8rem; margin-bottom: 1.5rem; color: #38bdf8; }
+        select, input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; font-size: 1rem; }
+        select, input { background: #334155; color: white; }
+        button { background: #0284c7; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #0369a1; }
+        
+        /* Lockdown Mode Screen Overrides */
+        body.locked { background-color: #000000; }
+        body.locked .container { background: #000000; border: 2px solid #ef4444; box-shadow: 0 0 30px rgba(239, 68, 68, 0.2); }
+        body.locked h1 { color: #ef4444; }
+        
+        .timer-display { font-size: 3.5rem; font-weight: bold; font-family: monospace; margin: 2rem 0; color: #f1f5f9; display: none; }
+        body.locked .timer-display { display: block; }
+        
+        .status-msg { color: #94a3b8; font-size: 0.95rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
 
+<div class="container" id="appCard">
+    <h1 id="mainTitle">Lockdown Protocol</h1>
+    
+    <div id="setupForm">
+        <label for="taskSelect">Choose Your Mandated Task:</label>
+        <select id="taskSelect" onchange="updateDefaultTime()">
+            <option value="25" data-name="Deep Study & Reading">🧠 Deep Study / Reading (25 mins)</option>
+            <option value="10" data-name="Digital Detox & Breathing">🧘 Digital Detox / Breathing (10 mins)</option>
+            <option value="15" data-name="Daily Writing & Journaling">✍️ Daily Writing (15 mins)</option>
+            <option value="custom" data-name="Custom Task">⚙️ Custom Task</option>
+        </select>
+        
+        <div id="customTimeInput" style="display:none;">
+            <input type="number" id="customMinutes" placeholder="Minutes (1-60)" min="1" max="60">
+        </div>
+        
+        <button onclick="startLockdown()">INITIATE LOCKDOWN</button>
+    </div>
+
+    <div class="timer-display" id="countdown">00:00</div>
+    <p class="status-msg" id="statusInstructions">Select a task above to begin.</p>
+</div>
+
+<script>
+    let countdownInterval;
+    let isLocked = false;
+
+    // Prevent accidental tab closing during lockdown
+    window.addEventListener('beforeunload', (e) => {
+        if (isLocked) {
+            e.preventDefault();
+            e.returnValue = 'Your task is not finished yet! Stay locked in.';
+        }
+    });
+
+    function updateDefaultTime() {
+        const select = document.getElementById('taskSelect');
+        const customDiv = document.getElementById('customTimeInput');
+        customDiv.style.display = select.value === 'custom' ? 'block' : 'none';
+    }
+
+    function startLockdown() {
+        const select = document.getElementById('taskSelect');
+        let minutes = parseInt(select.value);
+        let taskName = select.options[select.selectedIndex].getAttribute('data-name');
+        
+        if (select.value === 'custom') {
+            minutes = parseInt(document.getElementById('customMinutes').value);
+            taskName = "Custom Priority Task";
+            if (isNaN(minutes) || minutes < 1 || minutes > 60) {
+                alert("Please enter a valid time between 1 and 60 minutes.");
+                return;
+            }
+        }
+
+        // Activate Strict UI State
+        isLocked = true;
+        document.body.classList.add('locked');
+        document.getElementById('setupForm').style.display = 'none';
+        document.getElementById('mainTitle').innerText = `TASK: ${taskName.toUpperCase()}`;
+        document.getElementById('statusInstructions').innerText = "All access revoked. Focus entirely on your physical task.";
+        
+        let secondsLeft = minutes * 60;
+        displayTime(secondsLeft);
+
+        countdownInterval = setInterval(() => {
+            secondsLeft--;
+            displayTime(secondsLeft);
+
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                unlockApp();
+            }
+        }, 1000);
+    }
+
+    function displayTime(seconds) {
+        const min = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const sec = (seconds % 60).toString().padStart(2, '0');
+        document.getElementById('countdown').innerText = `${min}:${sec}`;
+    }
+
+    function unlockApp() {
+        isLocked = false;
+        document.body.classList.remove('locked');
+        document.body.style.backgroundColor = "#15803d"; // Flash Green on Success
+        document.getElementById('appCard').style.background = "#14532d";
+        document.getElementById('mainTitle').innerText = "🔓 UNLOCKED!";
+        document.getElementById('countdown').style.color = "#4ade80";
+        document.getElementById('statusInstructions').innerText = "Great job. Your phone applications are restored.";
+    }
+</script>
+
+</body>
+</html>
